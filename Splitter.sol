@@ -60,6 +60,12 @@ contract Splitter {
         return true;
     }
     
+    
+    function killMe() {
+        if (msg.sender == owner) {
+            suicide(owner);
+        }
+}
    
     function () public {}
         
