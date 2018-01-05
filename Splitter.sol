@@ -3,7 +3,7 @@ pragma solidity ^0.4.8;
 contract Splitter {
  
     address public owner;
-    mapping(address => uint) public  SplitterStructs;
+    mapping(address => uint) public  allotment;
     
     event LogSplitAllocation(address _allocationAddress, uint splitAmount);
     event LogWithdrawal(address withdrawer, uint withdrawnAmount);
@@ -19,10 +19,10 @@ contract Splitter {
         payable
         returns (bool success)
     {
-        if(msg.value == 0) revert();
-        if(msg.value < 2) revert();
-        if(firstReceiver == 0 || secondReceiver == 0) revert();
-        if(msg.sender == 0) revert();
+        require(msg.value != 0);
+        require(msg.value > 1);
+        require(firstReceiver != 0 || secondReceiver != 0);
+        require(msg.sender != 0);
         
        uint amountToSplit = msg.value;
        uint splitAmount = 0;
@@ -33,12 +33,12 @@ contract Splitter {
         }
         else {
            splitAmount = (amountToSplit - 1) /2;
-            SplitterStructs[msg.sender] += 1;
+            allotment[msg.sender] += 1;
             LogSplitAllocation (msg.sender, 1);
         }
         
-        SplitterStructs[firstReceiver] += splitAmount;
-        SplitterStructs[secondReceiver] += splitAmount;
+        allotment[firstReceiver] += splitAmount;
+        allotment[secondReceiver] += splitAmount;
        
        LogSplitAllocation (firstReceiver,splitAmount);
        LogSplitAllocation (secondReceiver,splitAmount); 
@@ -50,22 +50,24 @@ contract Splitter {
         public
         returns (bool success)
     {
-       if(SplitterStructs[msg.sender] == 0)  return false;
-       uint amountToWithdraw = SplitterStructs[msg.sender];
+       require(allotment[msg.sender] != 0);
+       uint amountToWithdraw = allotment[msg.sender];
        
-        SplitterStructs[msg.sender] = 0;
-       if(!msg.sender.send(amountToWithdraw)) revert();
-       LogWithdrawal(msg.sender, amountToWithdraw);
+        allotment[msg.sender] = 0;
+        msg.sender.transfer(amountToWithdraw);
+      
+        LogWithdrawal(msg.sender, amountToWithdraw);
        
         return true;
     }
     
     
-    function killMe() {
-        if (msg.sender == owner) {
-            suicide(owner);
-        }
-}
+    function killMe()
+        public
+    {
+        if (msg.sender == owner) selfdestruct(owner);
+    }
+
    
     function () public {}
         
